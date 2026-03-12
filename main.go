@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/user"
@@ -44,10 +46,13 @@ func scanGitFolders(folders []string, folder string) []string {
 	return folders
 }
 
+// starts the recursive search of git repositories living in the folder subtree
 func recursiveScanFolder(folder string) []string {
 	return scanGitFolders(make([]string, 0), folder)
 }
 
+// returns the dot file for the repos list.
+// creates it and the enclosing folder if it doesn't exist
 func getDotFilePath() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -55,6 +60,32 @@ func getDotFilePath() string {
 	}
 	dotFile := usr.HomeDir + "/.gogitlocalstats"
 	return dotFile
+}
+
+func parseFileLinesToSlice(filePath string) []string {
+	f := openFile(filePath)
+	defer f.Close()
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		if err != io.EOF {
+			panic(err)
+		}
+	}
+
+	return lines
+}
+
+// adds new slice elements to a file, given a slice of strings representing
+// paths to the filesystem
+func addNewSliceElementsToFile(filePath string, newRepos []string) {
+	existingRepos := parseFileLinesToSlice(filePath)
+	repos := joinSlices(newRepos, existingRepos)
+	dumpStringsSliceToFile(repos, filePath)
 }
 
 // scan given a path crawls it and its subfolders
