@@ -88,6 +88,22 @@ func addNewSliceElementsToFile(filePath string, newRepos []string) {
 	dumpStringsSliceToFile(repos, filePath)
 }
 
+func parseFileLinesToSlice(filePath string) []string {
+	f := openFile(filePath)
+	defer f.Close()
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		if err != io.EOF {
+			panic(err)
+		}
+	}
+	return lines
+}
+
 // scan given a path crawls it and its subfolders
 // searching for Git repositories
 
